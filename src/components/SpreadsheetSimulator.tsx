@@ -36,7 +36,7 @@ interface SpreadsheetSimulatorProps {
   completedModuleIds: string[];
   onCompleteModule: (module: LessonModule, elapsedSeconds: number) => void;
   onRecordAttempt: (isCorrect: boolean) => void;
-  injectedFormula?: { formula: string; timestamp: number; source?: 'forum' | 'cheatsheet' } | null;
+  injectedFormula?: { formula: string; timestamp: number } | null;
   onOpenCheatSheet?: () => void;
 }
 
@@ -125,7 +125,7 @@ export const SpreadsheetSimulator: React.FC<SpreadsheetSimulatorProps> = ({
     }
   }, [selectedModuleId]);
 
-  // Handle forum-injected formula ("Coba di Simulator")
+  // Handle formula injected from the cheat sheet ("Insert to cell")
   useEffect(() => {
     if (!injectedFormula) return;
     setFormulaDraft(injectedFormula.formula);
@@ -138,10 +138,7 @@ export const SpreadsheetSimulator: React.FC<SpreadsheetSimulatorProps> = ({
     }));
     setFeedback({
       type: 'info',
-      title:
-        injectedFormula.source === 'cheatsheet'
-          ? 'Contoh Rumus Cheat Sheet Disisipkan'
-          : 'Rumus dari Komunitas Dimuat',
+      title: 'Contoh Rumus Cheat Sheet Disisipkan',
       detail: `Rumus ${injectedFormula.formula} diterapkan ke sel ${selectedCell}. Anda dapat menyesuaikan rentang sel atau melihat alur evaluasinya di bawah.`,
     });
   }, [injectedFormula]);

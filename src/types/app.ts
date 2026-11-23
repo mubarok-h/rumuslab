@@ -1,4 +1,4 @@
-export type AppTab = 'simulator' | 'analytics' | 'certificates' | 'leaderboard' | 'community';
+export type AppTab = 'simulator' | 'analytics' | 'certificates' | 'leaderboard';
 
 export type LevelId = 1 | 2 | 3 | 4;
 
@@ -93,34 +93,6 @@ export interface CertificateRecord {
   completedModules: number;
 }
 
-export interface ForumReply {
-  id: string;
-  author: string;
-  authorRank: string;
-  createdAt: string;
-  body: string;
-  formulaSnippet?: string;
-  upvotes: number;
-  upvotedByMe?: boolean;
-  pendingSync?: boolean;
-}
-
-export interface ForumThread {
-  id: string;
-  topic: 'Dasar' | 'Logika' | 'Teks & Tanggal' | 'Pencarian' | 'Tips Kasus';
-  title: string;
-  author: string;
-  authorRank: string;
-  createdAt: string;
-  body: string;
-  formulaSnippet?: string;
-  presetModuleId?: string;
-  upvotes: number;
-  upvotedByMe?: boolean;
-  replies: ForumReply[];
-  pendingSync?: boolean;
-}
-
 export interface LeaderboardUser {
   id: string;
   name: string;
@@ -154,5 +126,4 @@ export interface UserProgressState {
   dailyLogs: Record<string, DailyActivityLog>;
   certificates: Record<number, CertificateRecord>;
   reminder: ReminderSettings;
-  offlineSyncQueueCount: number;
 }

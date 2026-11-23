@@ -14,7 +14,6 @@ interface ReminderOfflineModalProps {
   onRequestPermission: () => Promise<NotificationPermission>;
   onTestNotification: () => Promise<void>;
   isOnline: boolean;
-  offlineQueueCount: number;
 }
 
 const DAY_LABELS = [
@@ -38,7 +37,6 @@ export const ReminderOfflineModal: React.FC<ReminderOfflineModalProps> = ({
   onRequestPermission,
   onTestNotification,
   isOnline,
-  offlineQueueCount,
 }) => {
   const [nameInput, setNameInput] = useState(learnerName);
   const [testSent, setTestSent] = useState(false);
@@ -269,7 +267,7 @@ export const ReminderOfflineModal: React.FC<ReminderOfflineModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-800/60">
+            <div className="grid grid-cols-2 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-800/60">
               <div>
                 <div className="text-slate-500 dark:text-slate-400">Modul & Kasus</div>
                 <div className="mt-0.5 font-mono tabular-nums font-semibold text-slate-900 dark:text-white">
@@ -280,12 +278,6 @@ export const ReminderOfflineModal: React.FC<ReminderOfflineModalProps> = ({
                 <div className="text-slate-500 dark:text-slate-400">Katalog Rumus</div>
                 <div className="mt-0.5 font-mono tabular-nums font-semibold text-slate-900 dark:text-white">
                   {FORMULA_CATALOG.length} Fungsi
-                </div>
-              </div>
-              <div>
-                <div className="text-slate-500 dark:text-slate-400">Antrean Offline</div>
-                <div className="mt-0.5 font-mono tabular-nums font-semibold text-slate-900 dark:text-white">
-                  {offlineQueueCount} item
                 </div>
               </div>
             </div>

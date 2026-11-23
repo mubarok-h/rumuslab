@@ -12,7 +12,6 @@ const NAV_ITEMS: { id: AppTab; label: string }[] = [
   { id: 'analytics', label: 'Analitik' },
   { id: 'certificates', label: 'Sertifikat' },
   { id: 'leaderboard', label: 'Peringkat' },
-  { id: 'community', label: 'Komunitas' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({

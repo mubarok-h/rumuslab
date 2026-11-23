@@ -3,7 +3,6 @@ import { BellRing, WifiOff, X } from 'lucide-react';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { CertificatesView } from './components/CertificatesView';
 import { CheatSheetDrawer } from './components/CheatSheetDrawer';
-import { CommunityForumView } from './components/CommunityForumView';
 import { Header } from './components/Header';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ReminderOfflineModal } from './components/ReminderOfflineModal';
@@ -15,7 +14,6 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import {
   AppTab,
   CertificateRecord,
-  ForumThread,
   LessonModule,
   LevelId,
   ReminderSettings,
@@ -23,12 +21,8 @@ import {
 } from './types/app';
 import {
   DEFAULT_PROGRESS,
-  INITIAL_FORUM_THREADS,
-  getRankForXp,
   getTodayISO,
-  loadForumThreads,
   loadProgressState,
-  saveForumThreads,
   saveProgressState,
 } from './utils/storage';
 
@@ -36,14 +30,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('simulator');
   const [selectedModuleId, setSelectedModuleId] = useState<string>(CURRICULUM_MODULES[0].id);
   const [progress, setProgress] = useState<UserProgressState>(DEFAULT_PROGRESS);
-  const [threads, setThreads] = useState<ForumThread[]>(INITIAL_FORUM_THREADS);
   const [hydrated, setHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cheatSheetOpen, setCheatSheetOpen] = useState(false);
   const [injectedFormula, setInjectedFormula] = useState<{
     formula: string;
     timestamp: number;
-    source?: 'forum' | 'cheatsheet';
   } | null>(null);
 
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -84,10 +76,9 @@ export default function App() {
   // Load persisted IndexedDB / localStorage state
   useEffect(() => {
     let mounted = true;
-    Promise.all([loadProgressState(), loadForumThreads()]).then(([savedProg, savedThreads]) => {
+    loadProgressState().then((savedProg) => {
       if (!mounted) return;
       setProgress(savedProg);
-      setThreads(savedThreads);
       setHydrated(true);
     });
     return () => {
@@ -100,30 +91,6 @@ export default function App() {
     if (!hydrated) return;
     void saveProgressState(progress);
   }, [progress, hydrated]);
-
-  // Persist forum changes
-  useEffect(() => {
-    if (!hydrated) return;
-    void saveForumThreads(threads);
-  }, [threads, hydrated]);
-
-  // Sync offline-queued forum items automatically when connectivity returns
-  useEffect(() => {
-    if (!isOnline || !hydrated) return;
-    const hasPending = threads.some(
-      (t) => t.pendingSync || t.replies.some((r) => r.pendingSync)
-    );
-    if (hasPending) {
-      setThreads((prev) =>
-        prev.map((t) => ({
-          ...t,
-          pendingSync: false,
-          replies: t.replies.map((r) => ({ ...r, pendingSync: false })),
-        }))
-      );
-      setProgress((prev) => ({ ...prev, offlineSyncQueueCount: 0 }));
-    }
-  }, [isOnline, hydrated, threads]);
 
   const handleToggleDark = () => {
     setIsDark((prev) => {
@@ -296,82 +263,9 @@ export default function App() {
     setProgress((prev) => ({ ...prev, reminder: next }));
   };
 
-  const handleCreateThread = (
-    draft: Omit<ForumThread, 'id' | 'createdAt' | 'upvotes' | 'replies'>
-  ) => {
-    const created: ForumThread = {
-      ...draft,
-      id: `thread-${Date.now()}`,
-      createdAt: 'Baru saja',
-      upvotes: 1,
-      upvotedByMe: true,
-      replies: [],
-    };
-    setThreads((prev) => [created, ...prev]);
-    if (!isOnline) {
-      setProgress((prev) => ({
-        ...prev,
-        offlineSyncQueueCount: prev.offlineSyncQueueCount + 1,
-      }));
-    }
-  };
-
-  const handleAddReply = (threadId: string, body: string, formulaSnippet?: string) => {
-    const rankTitle = getRankForXp(progress.xp).title;
-    setThreads((prev) =>
-      prev.map((t) => {
-        if (t.id !== threadId) return t;
-        return {
-          ...t,
-          replies: [
-            ...t.replies,
-            {
-              id: `rep-${Date.now()}`,
-              author: progress.learnerName,
-              authorRank: rankTitle,
-              createdAt: 'Baru saja',
-              body,
-              formulaSnippet,
-              upvotes: 0,
-              pendingSync: !isOnline,
-            },
-          ],
-        };
-      })
-    );
-    if (!isOnline) {
-      setProgress((prev) => ({
-        ...prev,
-        offlineSyncQueueCount: prev.offlineSyncQueueCount + 1,
-      }));
-    }
-  };
-
-  const handleToggleUpvoteThread = (threadId: string) => {
-    setThreads((prev) =>
-      prev.map((t) => {
-        if (t.id !== threadId) return t;
-        const already = Boolean(t.upvotedByMe);
-        return {
-          ...t,
-          upvotedByMe: !already,
-          upvotes: already ? Math.max(0, t.upvotes - 1) : t.upvotes + 1,
-        };
-      })
-    );
-  };
-
-  const handleTryFormulaInSimulator = (formula: string, presetModuleId?: string) => {
-    if (presetModuleId) {
-      setSelectedModuleId(presetModuleId);
-    }
-    setActiveTab('simulator');
-    setInjectedFormula({ formula, timestamp: Date.now(), source: 'forum' });
-  };
-
   const handleInsertFromCheatSheet = (formula: string) => {
     setActiveTab('simulator');
-    setInjectedFormula({ formula, timestamp: Date.now(), source: 'cheatsheet' });
+    setInjectedFormula({ formula, timestamp: Date.now() });
   };
 
   const activeModuleFunctions =
@@ -457,19 +351,6 @@ export default function App() {
         )}
 
         {activeTab === 'leaderboard' && <LeaderboardView progress={progress} />}
-
-        {activeTab === 'community' && (
-          <CommunityForumView
-            threads={threads}
-            learnerName={progress.learnerName}
-            learnerXp={progress.xp}
-            isOnline={isOnline}
-            onCreateThread={handleCreateThread}
-            onAddReply={handleAddReply}
-            onToggleUpvoteThread={handleToggleUpvoteThread}
-            onTryFormulaInSimulator={handleTryFormulaInSimulator}
-          />
-        )}
       </main>
 
       {/* Non-intrusive Offline Toast */}
@@ -519,7 +400,6 @@ export default function App() {
         onRequestPermission={requestPermission}
         onTestNotification={() => triggerNotification()}
         isOnline={isOnline}
-        offlineQueueCount={progress.offlineSyncQueueCount}
       />
 
       <CheatSheetDrawer

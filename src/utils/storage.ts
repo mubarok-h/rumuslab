@@ -1,11 +1,9 @@
 import {
-  ForumThread,
   LeaderboardUser,
   UserProgressState,
 } from '../types/app';
 
 const PROGRESS_KEY = 'rumuslab_progress_v1';
-const FORUM_KEY = 'rumuslab_forum_v1';
 const DB_NAME = 'rumuslab_offline_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'app_state';
@@ -124,7 +122,6 @@ export const DEFAULT_PROGRESS: UserProgressState = {
     days: [1, 2, 3, 4, 5],
     customMessage: 'Waktunya 10 menit latihan rumus Excel harian di RumusLab.',
   },
-  offlineSyncQueueCount: 0,
 };
 
 export const INITIAL_LEADERBOARD_PEERS: Omit<LeaderboardUser, 'isCurrentUser'>[] = [
@@ -200,88 +197,6 @@ export const INITIAL_LEADERBOARD_PEERS: Omit<LeaderboardUser, 'isCurrentUser'>[]
   },
 ];
 
-export const INITIAL_FORUM_THREADS: ForumThread[] = [
-  {
-    id: 'thread-1',
-    topic: 'Pencarian',
-    title: 'Kapan sebaiknya pakai XLOOKUP dibanding VLOOKUP untuk tabel stok?',
-    author: 'Nadia Kusuma',
-    authorRank: 'Grandmaster Excel',
-    createdAt: '2 jam lalu',
-    body: 'Banyak pemula bingung saat kolom kode ada di sebelah kanan kolom nama barang. Dengan VLOOKUP kita terpaksa menggeser kolom, sedangkan XLOOKUP bisa mencari ke kiri secara langsung dan punya parameter bawaan jika data tidak ditemukan.',
-    formulaSnippet: '=XLOOKUP(E2,C2:C5,A2:A5,"Tidak Ditemukan")',
-    presetModuleId: 'lvl4-prac-xlookup',
-    upvotes: 24,
-    replies: [
-      {
-        id: 'rep-101',
-        author: 'Reza Mahendra',
-        authorRank: 'Master Spreadsheet',
-        createdAt: '1 jam lalu',
-        body: 'Setuju! Selain itu XLOOKUP tidak mudah rusak jika ada kolom baru disisipkan di tengah tabel karena rentang hasil dipilih terpisah.',
-        upvotes: 9,
-      },
-      {
-        id: 'rep-102',
-        author: 'Fajar Nugroho',
-        authorRank: 'Arsitek Logika',
-        createdAt: '40 menit lalu',
-        body: 'Untuk file lama yang dibuka di Excel 2016 ke bawah, aku masih membungkus VLOOKUP dengan IFERROR supaya tetap aman.',
-        formulaSnippet: '=IFERROR(VLOOKUP(E2,A2:B4,2,FALSE),"Tidak Terdaftar")',
-        upvotes: 6,
-      },
-    ],
-  },
-  {
-    id: 'thread-2',
-    topic: 'Logika',
-    title: 'Perbedaan urutan argumen SUMIF dan SUMIFS yang sering bikin tertukar',
-    author: 'Putri Handayani',
-    authorRank: 'Master Spreadsheet',
-    createdAt: '5 jam lalu',
-    body: 'Di SUMIF, rentang yang dijumlahkan diletakkan di argumen terakhir. Tapi di SUMIFS, rentang yang dijumlahkan justru wajib berada di argumen PERTAMA agar bisa menerima banyak pasangan kriteria setelahnya.',
-    formulaSnippet: '=SUMIFS(D2:D7,B2:B7,"Jakarta",C2:C7,"Lunas")',
-    presetModuleId: 'lvl4-prac-sumifs',
-    upvotes: 19,
-    replies: [
-      {
-        id: 'rep-201',
-        author: 'Salsa Maharani',
-        authorRank: 'Arsitek Logika',
-        createdAt: '3 jam lalu',
-        body: 'Tips menghafalnya: SUMIFS punya "S" di belakang sehingga jumlah syaratnya bisa bebas, makanya kolom target angka ditaruh di paling depan.',
-        upvotes: 11,
-      },
-    ],
-  },
-  {
-    id: 'thread-3',
-    topic: 'Teks & Tanggal',
-    title: 'Cara cepat membersihkan data nama hasil ekspor CSV yang penuh spasi ganda',
-    author: 'Bagus Setiawan',
-    authorRank: 'Analis Formula',
-    createdAt: '1 hari lalu',
-    body: 'Sering dapat data peserta dari Google Form yang spasi depannya kebanyakan atau huruf besar-kecilnya acak. Menggabungkan TRIM dengan UPPER atau PROPER langsung membereskan 1000 baris dalam hitungan detik.',
-    formulaSnippet: '=UPPER(TRIM(A2))',
-    presetModuleId: 'lvl3-prac-trim-upper',
-    upvotes: 15,
-    replies: [],
-  },
-  {
-    id: 'thread-4',
-    topic: 'Dasar',
-    title: 'Kenapa COUNT dan COUNTA memberi hasil berbeda pada daftar absensi?',
-    author: 'Dina Oktaviani',
-    authorRank: 'Pemula Tabel',
-    createdAt: '2 hari lalu',
-    body: 'Awalnya mengira COUNT menghitung semua baris terisi, ternyata COUNT hanya menghitung sel berisi angka murni, sedangkan sel berisi teks seperti "Hadir" baru dihitung kalau memakai COUNTA.',
-    formulaSnippet: '=COUNT(B2:B7)',
-    presetModuleId: 'lvl1-prac-count',
-    upvotes: 12,
-    replies: [],
-  },
-];
-
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
@@ -352,29 +267,4 @@ export async function saveProgressState(state: UserProgressState): Promise<void>
     // ignore quota errors
   }
   await idbSet(PROGRESS_KEY, state);
-}
-
-export async function loadForumThreads(): Promise<ForumThread[]> {
-  const fromIdb = await idbGet<ForumThread[]>(FORUM_KEY);
-  if (fromIdb && Array.isArray(fromIdb) && fromIdb.length > 0) return fromIdb;
-
-  try {
-    const raw = localStorage.getItem(FORUM_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return INITIAL_FORUM_THREADS;
-}
-
-export async function saveForumThreads(threads: ForumThread[]): Promise<void> {
-  try {
-    localStorage.setItem(FORUM_KEY, JSON.stringify(threads));
-  } catch {
-    // ignore
-  }
-  await idbSet(FORUM_KEY, threads);
 }
